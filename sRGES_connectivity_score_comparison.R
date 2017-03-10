@@ -53,7 +53,7 @@ getsRGES3 = function(RGES, cor, pert_dose, pert_time, diff, max_cor){
 #MAIN
 ####################
 cancer = "BRCA"
-type  = "reduced" #
+type  = "all" #all
 
 srges_output_path <- paste(cancer, "/lincs_cancer_sRGES.csv", sep="")
 summary_output_path <- paste(cancer, "/lincs_pred_summary_", type, ".txt", sep="")
@@ -239,7 +239,7 @@ my_palette <- colorRampPalette(c("white", "yellow", "red"))(n = 50)
 pheatmap(pred_all_merged_cor, color = my_palette, cluster_rows=F, cluster_cols=F, 
          cellwidth=25,  cellheight=25, display_numbers=T, file=paste("fig/", cancer, "_", type, "_performance_with_srges.pdf", sep=""))
 
-
+write.csv(pred_all_merged_cor, paste(cancer, "/compare_sRGES_lincs_cloud_", type, ".csv", sep=""))
 
 ###compare with the results from our method using our LINCS data library
 lincs_drug_prediction_rges = read.csv(srges_output_path,  stringsAsFactors = F)

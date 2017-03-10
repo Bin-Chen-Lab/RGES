@@ -8,7 +8,7 @@ library(metap)
 library(RColorBrewer)
 
 
-cancer = "BRCA"
+cancer = "COAD"
 landmark = 1
 fdr_cutoff = 0.25
 #CMAP score output
@@ -41,6 +41,8 @@ drug_instances_select = drug_instances_select[!duplicated(drug_instances_select$
 sig_id_selects = drug_instances_select$id
 
 drug_dz_signature = merge(dz_sig, data.frame(GeneID = rownames(lincs_signatures), lincs_signatures[, as.character(sig_id_selects)]),  by="GeneID", suffixes='')
+
+
 
 #########################
 ###
@@ -178,11 +180,11 @@ pheatmap((drug_dz_signature_reversed), annotation = annotation,  annotation_lege
 
 ##############
 #compute using rank
-drug_names_no_ranked = sapply(2:ncol(drug_dz_signature), function(id){
+drug_names_no_ranked = sapply(3:ncol(drug_dz_signature), function(id){
   lincs_drug_prediction$pert_iname[paste("X",lincs_drug_prediction$id, sep="") == names(drug_dz_signature_rank)[id]][1]
 })
 
-comparison_frame = drug_dz_signature[,-c(1)]
+comparison_frame = drug_dz_signature[,-c(1, 2)]
 gene_ids = drug_dz_signature[, 1]
 sample_class = rep(0, length(drug_names_no_ranked))
 sample_class[drug_names_no_ranked %in% active_drug_names] = 1
@@ -229,5 +231,72 @@ if (method == 'RANKPROD_SINGLE') {
 }
 
 write.table(rbind(genes.up,genes.down), paste(cancer,"/target_SAM_good_bad_drugs.txt", sep=""), sep="\t", row.names=F, col.names=T, quote=F)
+
+#visualize
+comparison_frame_subset = comparison_frame
+rownames(comparison_frame_subset) = gene_ids
+comparison_frame_subset = comparison_frame_subset[rownames(comparison_frame_subset) %in% c(genes.up$probe, genes.down$probe), ]
+
+drug_names = sapply(1:ncol(comparison_frame_subset), function(id){
+  lincs_drug_prediction$pert_iname[paste("X",lincs_drug_prediction$id, sep="") == as.character(names(comparison_frame_subset)[id])][1]
+})
+
+rownames(comparison_frame_subset) = merge(data.frame(GeneID=rownames(comparison_frame_subset)), res, by = "GeneID", sort=F)$symbol
+colnames(comparison_frame_subset) = drug_names
+
+annotation = rbind(data.frame(drug = active_drug_names, type = "effective"), data.frame(drug = inactive_drug_names, type = "ineffective"))
+rownames(annotation) = annotation[,1]
+annotation$type = factor(annotation$type)
+annotation = subset(annotation, select="type")
+names(annotation) = "Activity"
+Var1 = c("green", "red")
+names(Var1) = c("effective", "ineffective")
+ann_colors = list(Activity = c(effective = "green", ineffective="blue"))
+
+my.cols <- greenred(100) # brewer.pal(9, "Blues")
+pheatmap((comparison_frame_subset), annotation = annotation,  annotation_legend = T, col = my.cols, 
+         cellheight = 12, cellwidth = 8, show_rownames = T, legend=T,  
+         clustering_distance_cols = "euclidean", annotation_colors = ann_colors, 
+         filename = paste( "fig/targets_", cancer, "_reversed_genes_SAM.pdf", sep="")) #
+
+
+#
+###
+#select reversed genes based on enrichment 
+up_genes = dz_sig$GeneID[dz_sig$GeneID %in% rownames(lincs_signatures) & dz_sig$log2FoldChange > 0]
+down_genes = dz_sig$GeneID[dz_sig$GeneID %in% rownames(lincs_signatures) & dz_sig$log2FoldChange < 0]
+effective_drug_signature_ids = lincs_drug_prediction[lincs_drug_prediction$pert_iname %in% active_drug_names, "id"]
+ineffective_drug_signature_ids = lincs_drug_prediction[lincs_drug_prediction$pert_iname %in% inactive_drug_names, "id"]
+
+
+drug_signature_rank = lincs_signatures[, as.character(sig_id_selects)]
+for (i in 1:ncol(drug_signature_rank)){
+  drug_signature_rank[,i] = rank(-1 * drug_signature_rank[,i] ) #highly expressed genes ranked on the top
+}
+
+up_ps = NULL
+for (gene in up_genes){
+  effective_ranks = as.numeric(drug_signature_rank[gene, colnames(drug_signature_rank) %in% effective_drug_signature_ids])
+  ineffective_ranks = as.numeric(drug_signature_rank[gene, colnames(drug_signature_rank) %in% ineffective_drug_signature_ids])
+  up_ps = c(up_ps, t.test(effective_ranks, ineffective_ranks, alternative = "greater")$p.value)
+}
+
+up_genes_p = data.frame(GeneID = up_genes, p = up_ps)
+up_genes_p = merge(up_genes_p, res, by = "GeneID")
+up_genes_p = up_genes_p[order(up_genes_p$p), ]
+up_genes_p$p_adj = p.adjust(up_genes_p$p)
+
+down_ps = NULL
+for (gene in down_genes){
+  effective_ranks = as.numeric(drug_signature_rank[gene, colnames(drug_signature_rank) %in% effective_drug_signature_ids])
+  ineffective_ranks = as.numeric(drug_signature_rank[gene, colnames(drug_signature_rank) %in% ineffective_drug_signature_ids])
+  down_ps = c(down_ps, t.test(effective_ranks, ineffective_ranks, alternative = "less")$p.value)
+}
+down_genes_p = data.frame(GeneID = down_genes, p = down_ps)
+down_genes_p = merge(down_genes_p, res, by = "GeneID")
+down_genes_p = down_genes_p[order(down_genes_p$p), ]
+down_genes_p$p_adj = p.adjust(down_genes_p$p)
+
+
 
 

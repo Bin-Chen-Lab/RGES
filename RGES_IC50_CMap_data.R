@@ -1,22 +1,12 @@
+#Compute RGES in CMap and evaluate if the correlation retains
+#only BRCA has signficant correlation; LIHC and COAD do not have related cell lines.
 #correlate drug sensitivity with the potency to reserse disease gene expression (RGES)
 #to reduce the computation time, only the drugs with sensitivty data were examined
 
-#library(qvalue)
-library("ROCR")
-library("lsa")
-
-cancer = "ER"
-landmark = 1
+cancer = "BRCA"
+landmark = 0
 #CMAP score output
-#output_path <- paste(cancer, "/lincs_score_", landmark, ".csv", sep="")
-
-if (cell_line_selected == "HT29"){
-  cell_line_selected_chembl = "HT-29"
-}else if (cell_line_selected == "MCF7"){
-  cell_line_selected_chembl = "MCF7"
-}else if (cell_line_selected == "HEPG2"){
-  cell_line_selected_chembl = "HepG2"
-}
+output_path <- paste(cancer, "/lincs_score_", "geo", ".csv", sep="")
 
 ##############
 cmap_score_new <- function(sig_up, sig_down, drug_signature) {
@@ -102,48 +92,26 @@ get.gene.list <- function(con){
   return(lincs_gene$gene_id)
 }
 
-get.instance.sig <- function(id, con,  landmark=F){
-  
-  sig_file = paste("~/Documents/stanford/lincs/data/lincs/", id, ".txt", sep="")
-  sig_value = NULL
-  
-  if (file.exists(sig_file)){
-    sig_value= scan(sig_file )
-    
-    if (landmark){
-      sig_value = sig_value[1:978]
-    }
-    
-  }else{
-    query <- paste("select * from proj_lincs.sig_values where id = ", id, sep="")
-    rs <- dbSendQuery(con, query)
-    result <- fetch(rs, n = -1)[1,]
-    value <- as.double(unlist(strsplit(result[1,2], ",")))
-    if (landmark == T){
-      instance.sig <- data.frame(sig_id =  id, probe_id = seq(1, 978), value[1:978])      
-    }else{
-      instance.sig <- data.frame(sig_id = id, probe_id = seq(1, length(value)), value = value)      
-    }
-    dbClearResult(rs)  
-    sig_value = instance.sig$value
-  }
-  return (sig_value)
-}
 
 ##############
 load("raw/lincs/lincs_signatures_cmpd_landmark.RData")
-lincs_sig_info = read.csv("raw/lincs/lincs_sig_info.csv", stringsAsFactors=F)
+load('raw/cmap//cmap_signatures.RData')
+cmap_sig_info = read.csv("raw/cmap/cmap_drug_experiments_new.csv", stringsAsFactors=F)
+cmap_lincs_valid_instances = read.csv("raw/cmap/cmap_valid_instances.csv")
+
+#cmap_sig_info = subset(cmap_sig_info, cell_line %in% c("MCF7") & concentration < 5*1E-5 & concentration> 5*1E-6 & id %in% cmap_lincs_valid_instances$id[cmap_lincs_valid_instances$valid %in% c(1)])
+cmap_sig_info = subset(cmap_sig_info, cell_line %in% c("MCF7") & id %in% cmap_lincs_valid_instances$id[cmap_lincs_valid_instances$valid %in% c(1)])
+
 lincs_drug_activity = read.csv(paste(cancer, "/lincs_drug_activity_confirmed.csv", sep=""), stringsAsFactors=F)
 lincs_drug_activity = unique(subset(lincs_drug_activity, select=c("pert_iname", "doc_id", "standard_value", "standard_type", "description",    "organism",		"cell_line")))
 
-
+landmark = 0
 if (landmark ==1){
-  gene.list = rownames(lincs_signatures)
-}else{
-  gene.list = get.gene.list(con)  
+  cmap_signatures = cmap_signatures[cmap_signatures$V1 %in% rownames(lincs_signatures), ]
 }
-sig.ids = lincs_sig_info$id[lincs_sig_info$pert_type == "trt_cp" & lincs_sig_info$is_gold == 1 & lincs_sig_info$id >0 & tolower(lincs_sig_info$pert_iname) %in% tolower(lincs_drug_activity$pert_iname)]
+gene.list = cmap_signatures$V1
 
+sig.ids = cmap_sig_info$id[tolower(cmap_sig_info$name) %in% tolower(lincs_drug_activity$pert_iname)]
 
 #load  genes
 fromGSE62944 = F
@@ -155,7 +123,7 @@ if (fromGSE62944){
   res$GeneID = sapply((res$id), function(id){unlist(strsplit(id, "\\|"))[2]})
   res$symbol = sapply((res$id), function(id){unlist(strsplit(id, "\\|"))[1]})
   dz_signature = subset(res, !is.na(padj) & !is.na(id) & id !='?' & padj < 1E-3 & abs(log2FoldChange) > 1.5 & abs(log2FoldChange) != Inf )
-  dz_signature = subset(dz_signature, GeneID %in% gene.list )
+  dz_signature = subset(dz_signature, GeneID %in% gene.list ) #& GeneID %in% rownames(lincs_signatures))
   dz_signature$up_down = "up"
   dz_signature$up_down[dz_signature$log2FoldChange<0] = "down"
 }
@@ -174,33 +142,57 @@ if (nrow(dz_genes_down)> max_gene_size){
 
 
 dz_cmap_scores = NULL
-dz_pearsons = NULL
 dz_spearmans = NULL
 IQRs = NULL
-cosines = NULL
 count = 0
 for (exp_id in sig.ids) {
   count = count + 1
   print(paste("Computing score for disease against cmap_experiment_id =",count))
-  if (landmark ==1){
-    sig <-  lincs_signatures[, as.character(exp_id)]
-    cmap_exp_signature <- data.frame(gene.list,  rank(-1 * sig, ties.method="random"))    
-  }else{
-    sig <-  get.instance.sig(exp_id, con)
-    cmap_exp_signature <- cbind(gene.list,  rank(-1 * sig, ties.method="random"))    
-  }
+  sig <-  cmap_signatures[, paste("V", as.character(exp_id+1), sep="")]
+  cmap_exp_signature <- data.frame(gene.list,  rank(-1 * sig, ties.method="random"))    
   colnames(cmap_exp_signature) <- c("ids","rank")
   dz_cmap_scores = c(dz_cmap_scores, cmap_score_new(dz_genes_up,dz_genes_down,cmap_exp_signature))
   
+ # compute spearman correlation and pearson correlation
+  dz_sig_drug_sig = merge(dz_signature, data.frame(GeneID=gene.list, expr= sig), by="GeneID")
+  dz_spearmans = c(dz_spearmans, cor(dz_sig_drug_sig$log2FoldChange, dz_sig_drug_sig$expr, method="spearman"))
+  IQRs = c(IQRs, IQR(sig))
+  
 }
 
+results = data.frame(id = sig.ids, RGES = dz_cmap_scores, spearman = dz_spearmans, iqr = IQRs)
 
-results = data.frame(id = sig.ids, RGES = dz_cmap_scores)
-
-
-
-results = merge(results, lincs_sig_info, by = "id")
+results = merge(results, cmap_sig_info, by = "id")
 results = results[order(results$RGES),]
+write.csv(results, output_path)
+
+##########
+#correlated to IC50
+lincs_drug_activity = aggregate(standard_value ~ pert_iname, lincs_drug_activity,median)
+
+drug_activity_rges = merge(results, lincs_drug_activity, by.x="name", by.y="pert_iname")
+
+drug_activity_rges = aggregate(cbind(RGES, standard_value) ~ name, drug_activity_rges, median)
+
+plot(drug_activity_rges$RGES, log(drug_activity_rges$standard_value, 10))
+cor_test = cor.test(drug_activity_rges$RGES, log(drug_activity_rges$standard_value, 10))
+
+drug_activity_rges = drug_activity_rges[order(drug_activity_rges$RGES),]
+
+lm_cmap_ic50 = lm(RGES ~ log(standard_value, 10), drug_activity_rges)
 
 
+pdf(paste( "fig/", cancer, "rges_ic50_cmap_data_", landmark, ".pdf", sep=""))
+ggplot(drug_activity_rges, aes(RGES, log(drug_activity_rges$standard_value, 10)  )) +  theme_bw()  + 
+  theme(legend.position ="bottom", axis.text=element_text(size=18), axis.title=element_text(size=18))  +                                                                                              
+  stat_smooth(method="lm", se=F, color="black")  + geom_point(size=3) + 
+  annotate("text", label = paste(cancer, ",", "MCF7", sep=""), 
+           x = 0, y = 8.1, size = 6, colour = "black") +
+  annotate("text", label = paste("r=", format(summary(lm_cmap_ic50)$r.squared ^ 0.5, digit=2), ", ",  "P=", format(anova(lm_cmap_ic50)$`Pr(>F)`[1], digit=2), sep=""), 
+           x = 0, y = 7.7, size = 6, colour = "black") +
+  annotate("text", label = paste("rho=", format(cor_test$estimate, digit=2), ", P=", format(cor_test$p.value, digit=3, scientific=T), sep=""), x = 0, y = 7.3, size = 6, colour = "black") +
+  scale_size(range = c(2, 5)) +
+  xlab("RGES") + guides(shape=FALSE, size=FALSE) +
+  ylab("log10(IC50) nm") + coord_cartesian(xlim = c(-0.5, 0.5), ylim=c(-1, 8)) 
+dev.off()
 

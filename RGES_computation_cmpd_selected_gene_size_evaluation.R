@@ -5,10 +5,16 @@
 library("ROCR")
 library("lsa")
 
-cancer = "ER"
+gene_size_performance = data.frame()
 landmark = 1
-#CMAP score output
-#output_path <- paste(cancer, "/lincs_score_", landmark, ".csv", sep="")
+
+cancers = c("BRCA", "COAD", "LIHC")
+cell_lines_selected = c("MCF7", "HT29", "HEPG2")
+
+for (k in 1:3){
+
+cancer = cancers[k]
+cell_line_selected = cell_lines_selected[k]
 
 if (cell_line_selected == "HT29"){
   cell_line_selected_chembl = "HT-29"
@@ -134,7 +140,7 @@ get.instance.sig <- function(id, con,  landmark=F){
 load("raw/lincs/lincs_signatures_cmpd_landmark.RData")
 lincs_sig_info = read.csv("raw/lincs/lincs_sig_info.csv", stringsAsFactors=F)
 lincs_drug_activity = read.csv(paste(cancer, "/lincs_drug_activity_confirmed.csv", sep=""), stringsAsFactors=F)
-lincs_drug_activity = unique(subset(lincs_drug_activity, select=c("pert_iname", "doc_id", "standard_value", "standard_type", "description",    "organism",		"cell_line")))
+lincs_drug_activity = unique(subset(lincs_drug_activity, cell_line %in% cell_line_selected_chembl, select=c("pert_iname", "doc_id", "standard_value", "standard_type", "description",    "organism",		"cell_line")))
 
 
 if (landmark ==1){
@@ -142,9 +148,12 @@ if (landmark ==1){
 }else{
   gene.list = get.gene.list(con)  
 }
-sig.ids = lincs_sig_info$id[lincs_sig_info$pert_type == "trt_cp" & lincs_sig_info$is_gold == 1 & lincs_sig_info$id >0 & tolower(lincs_sig_info$pert_iname) %in% tolower(lincs_drug_activity$pert_iname)]
+sig.ids = lincs_sig_info$id[lincs_sig_info$pert_type == "trt_cp" & lincs_sig_info$cell_id %in% cell_line_selected & lincs_sig_info$is_gold == 1 & lincs_sig_info$id >0 & tolower(lincs_sig_info$pert_iname) %in% tolower(lincs_drug_activity$pert_iname)]
 
+gene_sizes = seq(5, 80, 5)
+gene_size_cor = NULL
 
+for (gene_size in gene_sizes){
 #load  genes
 fromGSE62944 = F
 if (fromGSE62944){
@@ -156,6 +165,12 @@ if (fromGSE62944){
   res$symbol = sapply((res$id), function(id){unlist(strsplit(id, "\\|"))[1]})
   dz_signature = subset(res, !is.na(padj) & !is.na(id) & id !='?' & padj < 1E-3 & abs(log2FoldChange) > 1.5 & abs(log2FoldChange) != Inf )
   dz_signature = subset(dz_signature, GeneID %in% gene.list )
+  
+  #select top genes
+ # dz_signature = dz_signature[order(abs(dz_signature$log2FoldChange), decreasing = T), ]
+  
+  #if (nrow(dz_signature) < gene_size) next
+  #dz_signature = head(dz_signature, gene_size)
   dz_signature$up_down = "up"
   dz_signature$up_down[dz_signature$log2FoldChange<0] = "down"
 }
@@ -164,13 +179,13 @@ dz_genes_up <- subset(dz_signature,up_down=="up",select="GeneID")
 dz_genes_down <- subset(dz_signature,up_down=="down",select="GeneID")
 
 #only choose the top 100 genes
-max_gene_size = 150
-if (nrow(dz_genes_up)> max_gene_size){
-  dz_genes_up <- data.frame(GeneID= dz_genes_up[1:max_gene_size,])
-}
-if (nrow(dz_genes_down)> max_gene_size){
-  dz_genes_down <- data.frame(GeneID=dz_genes_down[1:max_gene_size,])
-}
+ max_gene_size = gene_size
+ if (nrow(dz_genes_up)> max_gene_size){
+   dz_genes_up <- data.frame(GeneID= dz_genes_up[1:max_gene_size,])
+ }
+ if (nrow(dz_genes_down)> max_gene_size){
+   dz_genes_down <- data.frame(GeneID=dz_genes_down[1:max_gene_size,])
+ }
 
 
 dz_cmap_scores = NULL
@@ -197,10 +212,31 @@ for (exp_id in sig.ids) {
 
 results = data.frame(id = sig.ids, RGES = dz_cmap_scores)
 
-
-
 results = merge(results, lincs_sig_info, by = "id")
-results = results[order(results$RGES),]
+results = merge(results, lincs_drug_activity, by = "pert_iname")
 
+results_merge = aggregate(cbind(standard_value, RGES) ~ pert_iname, results, median)
+
+test = cor.test(results_merge$standard_value, results_merge$RGES, method= "spearman")
+
+gene_size_cor = c(gene_size_cor, test$estimate)
+
+gene_size_performance = rbind(gene_size_performance, data.frame(cancer, gene_size, cor =  test$estimate))
+}
+}
+
+gene_size_performance = read.csv("gene_size_performance.csv")
+
+pdf(paste( "fig/gene_size_performance.pdf", sep=""))
+
+ggplot(gene_size_performance, aes( gene_size, cor,group = cancer, colour = cancer)  ) +  theme_bw()  +  geom_vline(xintercept = 25) + 
+ geom_path(alpha = 0.5) + xlab("size of the gene set on each side") + ylab("correlation between RGES and IC50") +
+theme(legend.position ="bottom", axis.text=element_text(size=22), axis.title=element_text(size=25))                                                                                        
+  
+dev.off()
+
+write.csv(gene_size_performance, "gene_size_performance.csv")
+
+aggregate(cor ~ gene_size, gene_size_performance, median)
 
 

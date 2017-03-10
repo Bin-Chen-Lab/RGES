@@ -8,7 +8,7 @@ library(metap)
 library(RColorBrewer)
 
 
-cancer = "LIHC"
+cancer = "ER"
 landmark = 1
 fdr_cutoff = 0.25
 

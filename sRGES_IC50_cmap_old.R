@@ -1,4 +1,5 @@
 #compute correlation between RGES and drug IC50s
+#use CMap old, compared the correlation difference if using the old cmap approach
 
 library(cowplot)
 library("ROCR")
@@ -54,11 +55,11 @@ getsRGES3 = function(RGES, cor, pert_dose, pert_time, diff, max_cor){
 #MAIN
 ################
 
-cancer = "ER"
+cancer = "BRCA"
 landmark = 1 #landmark: 1. all genes: 0
 
 #build a reference model according to dose and time
-output_path <- paste(cancer, "/all_lincs_score.csv", sep="")
+output_path <- paste(cancer, "/all_lincs_score_cmap_old.csv", sep="")
 lincs_drug_prediction = read.csv(output_path)
 
 #should use pert_dose > 0.01?
@@ -96,7 +97,6 @@ diff = tapply(lincs_drug_prediction_pairs$cmap_diff, paste(lincs_drug_prediction
 
 #CMAP score output
 cell_lines = read.csv(paste("raw/cell_lines/", cancer, "_cell_lines.csv", sep=""))
-if ("subtype" %in% colnames(cell_lines)){ cell_lines = cell_lines[!is.na(cell_lines$subtype),]}
 
 output_path <- paste(cancer, "/lincs_score_", landmark, ".csv", sep="")
 lincs_drug_prediction = read.csv(output_path)

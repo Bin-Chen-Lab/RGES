@@ -3,12 +3,16 @@ setwd("~/Documents/stanford/tumor_cell_line/RGES_manuscript/data")
 library(pheatmap)
 library(gplots)
 library("DESeq")
+library("RColorBrewer")
+my.cols <- rev(colorRampPalette(brewer.pal(10, "RdYlBu"))(256)) #RdYlBu
+
+
 load("../../data/GSE62944/TumorCounts.RData")
 load("../../data/GSE62944/NormalCounts.RData")
 load("../../data/GSE62944/clinvar.RData")
 load("../../data/GSE62944/NormalCancerType.RData")
 
-cancer = "LIHC"
+cancer = "COAD"
 
 load(paste(cancer, '/', cancer, 'tcga_deseq_final.RData', sep='')) #tcga_deseq LIHC_sig_deseq_QC
 
@@ -55,11 +59,14 @@ Var1        <- c("lightblue", "green")
 names(Var1) <- c("tumor", "normal")
 anno_colors <- list(type = Var1)
 
-my.cols <- greenred(100) #brewer.pal(9, "Blues")
+#my.cols <- greenred(100) #brewer.pal(9, "Blues")
 pheatmap(scale(normalized_cds_sig), col = my.cols, annotation = annotation, cellwidth=3, cellheight=6,annotation_colors = anno_colors,
          show_colnames=F, legend=T, show_rownames=F, filename=paste(cancer, "/dz_sig_validation_lincs_reduced_v0.pdf", sep="")
 )
-pheatmap(scale(normalized_cds_sig), col = my.cols, annotation = annotation, annotation_colors = anno_colors,
+#for some reason, in breast cancer, MIF has NA value after scale.
+a = t(scale(t(normalized_cds_sig)))
+a = a[!rownames(a) %in% c("MIF"), ]
+pheatmap(a, col = my.cols, annotation = annotation, annotation_colors = anno_colors,
          show_colnames=F, legend=T, show_rownames=F, filename=paste(cancer, "/dz_sig_validation_lincs_reduced_v1.pdf", sep="")
 )
 

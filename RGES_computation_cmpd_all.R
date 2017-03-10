@@ -79,7 +79,7 @@ cmap_score_new <- function(sig_up, sig_down, drug_signature) {
   }else if (sum(sign(c(ks_down,ks_up))) == 0) {
     connectivity_score <- ks_up - ks_down # different signs
   }else{
-    0 #connectivity_score <- ks_up - ks_down
+    connectivity_score <- ks_up - ks_down
   }
   
   return(connectivity_score)

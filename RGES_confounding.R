@@ -241,4 +241,69 @@ ggplot(drug_dose_1_2s, aes(y=RGES, x=factor(cancer), fill=factor(dose))) + geom_
         scale_fill_manual(name="Treatment concentration", values = c("blue", "yellow")) 
 dev.off()
 
+#
+drug_class = read.csv("~/Documents/stanford/sensitivity/data/GDSC1000/compounds.csv", stringsAsFactors = F)
+cytotoxic = drug_class$Name[drug_class$Action == "cytotoxic"]
+targeted = drug_class$Name[drug_class$Action == "targeted"]
+
+#identify drugs whose RGES were not affected by the confounding factors?
+invariant_cmpds = NULL
+variant_cmpds = NULL
+for (cancer_type in cancers){
+#cancer_type = "BRCA"
+lincs_drug_prediction_subset = subset(lincs_drug_predictions,  cancer == cancer_type)
+cmpd_rges_variation = by(lincs_drug_prediction_subset$RGES, lincs_drug_prediction_subset$pert_iname, sd)
+cmpd_rges_dose = by(lincs_drug_prediction_subset$pert_dose, lincs_drug_prediction_subset$pert_iname, function(x) length(unique(x)))
+cmpd_rges_time = by(lincs_drug_prediction_subset$pert_time, lincs_drug_prediction_subset$pert_iname, function(x) length(unique(x)))
+cmpd_rges_cell_id = by(lincs_drug_prediction_subset$cell_id, lincs_drug_prediction_subset$pert_iname, function(x) length(unique(x)))
+cmpd_rges_count = by(lincs_drug_prediction_subset$RGES, lincs_drug_prediction_subset$pert_iname, length)
+
+cmpd_rges_variation_subset = cmpd_rges_variation[cmpd_rges_dose>1 & cmpd_rges_time > 1 & cmpd_rges_cell_id>1]
+cmpd_rges_variation_subset = cmpd_rges_variation_subset[!is.na(cmpd_rges_variation_subset)]
+
+head(sort(cmpd_rges_variation_subset), 30)
+tail(sort(cmpd_rges_variation_subset), 30)
+cutoff1 = qnorm(0.01, mean(cmpd_rges_variation_subset), sd(cmpd_rges_variation_subset))
+cutoff2 = qnorm(0.01, mean(cmpd_rges_variation_subset), sd(cmpd_rges_variation_subset), lower.tail = F)
+
+invariant_cmpds = c(invariant_cmpds, names(cmpd_rges_variation_subset[cmpd_rges_variation_subset < cutoff1]))
+variant_cmpds = c(variant_cmpds, names(cmpd_rges_variation_subset[cmpd_rges_variation_subset > cutoff2]))
+
+cmpd_rges_variation_cytotoxic = cmpd_rges_variation_subset[tolower(names(cmpd_rges_variation_subset)) %in% tolower(cytotoxic)]
+cmpd_rges_variation_targeted = cmpd_rges_variation_subset[tolower(names(cmpd_rges_variation_subset)) %in% tolower(targeted)]
+print(t.test(cmpd_rges_variation_targeted, cmpd_rges_variation_cytotoxic, alternative = "greater"))
+}
+
+sort(table(invariant_cmpds))
+sort(table(variant_cmpds))
+
+qnorm(0.01, mean(cmpd_rges_variation_subset), sd(cmpd_rges_variation_subset), lower.tail = F)
+
+#find drugs tested at least in two distinct dose, two distinct times, and two distinct cell lines
+cmpds = names(cmpd_rges_variation_subset)
+p = sapply(cmpds, function(cmpd){
+  a = lincs_drug_prediction_subset[lincs_drug_prediction_subset$pert_iname == cmpd, ]
+  rges_lm = lm(RGES ~ pert_dose + pert_time + cell_id , a)
+  #rges_lm_summary = summary(rges_lm)
+  #anova(rges_lm)$`Pr(>F)`[1]
+  f = summary(rges_lm)$fstatistic
+  pf(f[1],f[2],f[3],lower.tail=F)
+})
+
+cmpd_p = data.frame(cmpd = cmpds, p)
+cmpd_p = cmpd_p[order(cmpd_p$p), ]
+sum(cmpd_p$p < 0.05, na.rm = T)
+sum(cmpd_p$p > 0.05, na.rm = T)
+
+a = lincs_drug_prediction_subset[lincs_drug_prediction_subset$pert_iname == "oxetane", ]
+rges_lm = lm(RGES ~  pert_dose +  pert_time + cell_id , a)
+summary(rges_lm)
+#anova(rges_lm)$`Pr(>F)`
+#names((rges_lm)) 
+
+rges_glm = glm(RGES ~ pert_dose + pert_time + cell_id , family = "gaussian", a)
+summary(rges_glm)
+
+library("Rcmdr")
+leveneTest(a$RGES, lincs_drug_prediction_subset$RGES)
 

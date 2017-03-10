@@ -94,10 +94,13 @@ activity_RGES_summarized$p_text = sapply(1:nrow(activity_RGES_summarized), funct
   }
 })
 
+activity_RGES_summarized$activity = "effective"
+activity_RGES_summarized$activity[activity_RGES_summarized$standard_value>10000] = "ineffective"
+
 pdf(paste( "fig/", cancer, "rges_ic50_normalized_validated_drugs.pdf", sep=""))
 ggplot(activity_RGES_summarized, aes(sRGES, log(activity_RGES_summarized$standard_value, 10) )) +    theme_light() + theme_classic() + 
   theme(legend.position ="bottom", axis.text=element_text(size=22), axis.title=element_text(size=25)) +                                                                                               
-  stat_smooth(method="lm", se=F, color="black")  + geom_point(aes(shape=p_text), size=3) + 
+  stat_smooth(method="lm", se=F, color="black")  + geom_point(aes(shape=p_text,color=activity), size=3) + 
   scale_size(range = c(2, 5)) +
   xlab("sRGES") + guides(shape=FALSE, size=FALSE) +
   ylab("log10(IC50) nm") + coord_cartesian(xlim = c(-0.8, 0.8), ylim=c(-1, 8)) + 
