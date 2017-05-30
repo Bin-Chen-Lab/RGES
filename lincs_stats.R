@@ -3,11 +3,13 @@
 library ("ggplot2")
 
 cancer = "BRCA"
+
 #cmpd
 output_path <- paste(cancer, "/all_lincs_score.csv", sep="")
-lincs_drug_prediction = read.csv(output_path)
+lincs_drug_prediction <- read.csv(output_path)
+
 #~70 signatures have no dose info. Ingore them in the following analysis
-lincs_drug_prediction = subset(lincs_drug_prediction, pert_dose >0)
+lincs_drug_prediction <- subset(lincs_drug_prediction, pert_dose >0)
 
 nrow(lincs_drug_prediction)
 length(unique(lincs_drug_prediction$pert_iname))
@@ -21,18 +23,18 @@ sum(lincs_drug_prediction$pert_dose < 1 & lincs_drug_prediction$pert_dose<10)
 sum(lincs_drug_prediction$padj<0.05)/nrow(lincs_drug_prediction)
 length(unique(lincs_drug_prediction$pert_iname[lincs_drug_prediction$padj<0.05]))/length(unique(lincs_drug_prediction$pert_iname))
 
-lincs_drug_prediction$RGES = lincs_drug_prediction$cmap_score
-lincs_drug_prediction$dose[lincs_drug_prediction$pert_dose >=10] = ">=10"
-lincs_drug_prediction$dose[lincs_drug_prediction$pert_dose <10] = "<10"
+lincs_drug_prediction$RGES <- lincs_drug_prediction$cmap_score
+lincs_drug_prediction$dose[lincs_drug_prediction$pert_dose >=10] <- ">=10"
+lincs_drug_prediction$dose[lincs_drug_prediction$pert_dose <10] <- "<10"
 
 #visualize the top 10 cells
-cells = tail(sort(table(lincs_drug_prediction$cell_id)), 15)
-lincs_drug_prediction$cell_line = as.character(lincs_drug_prediction$cell_id)
-lincs_drug_prediction$cell_line[!(lincs_drug_prediction$cell_line %in% names(cells))] = "other 56 cell lines"
-lincs_drug_prediction$cell_line = factor(lincs_drug_prediction$cell_line, levels = c(rev(names(cells)), "other 56 cell lines"))
+cells <- tail(sort(table(lincs_drug_prediction$cell_id)), 15)
+lincs_drug_prediction$cell_line <- as.character(lincs_drug_prediction$cell_id)
+lincs_drug_prediction$cell_line[!(lincs_drug_prediction$cell_line %in% names(cells))] <- "other 56 cell lines"
+lincs_drug_prediction$cell_line <- factor(lincs_drug_prediction$cell_line, levels = c(rev(names(cells)), "other 56 cell lines"))
 
 #
-drug_freq = data.frame((table(lincs_drug_prediction$pert_iname)))
+drug_freq <- data.frame((table(lincs_drug_prediction$pert_iname)))
 #pert_iname distribution
 pdf(paste( "fig/",  "pert_iname.pdf", sep=""))
 ggplot(drug_freq, aes( Freq, fill="red", color="red")) + geom_histogram(bins=20) + theme_bw() +  scale_x_log10() + 

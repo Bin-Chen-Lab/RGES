@@ -1,6 +1,9 @@
 setwd("~/Documents/stanford/tumor_cell_line/RGES_manuscript/release/data")
 
-cancers = c("BRCA", "LIHC", "COAD")
+cancers = c("BRCA", "LIHC", "COAD", "ER")
+
+#core functions
+source("../code/core_functions.R")
 
 #get disease signatures
 source("../code/disease_sig.R")
@@ -12,23 +15,24 @@ source("../code/RGES_computation_cmpd_selected.R")
 #compute RGES of all compounds using the landmark genes
 source("../code/RGES_computation_cmpd_all.R")
 
-#lincs statistics
+#LINCS statistics
 source("../code/lincs_stats.R")
 
-#confounding factors
+#confounding factors. RGES depends on cell line, treatment duration, treatment concentration
 source("../code/RGES_confounding.R")
 
-#dose vs RGES
+#relationship between treatment duration vs RGES
 source("../code/RGES_dose_cor.R")
 
-#RGES vs connectivity cmap
+#Differences between RGES and connectivity cmap score. 
 source("../code/RGES_cmap_score_diff.R")
 
-#RGES in single cell lines
+#correlation between RGES and IC50 within single cell lines
 source("../code/RGES_IC50_in_single_cell_lines.R")
 
-#explain outliers
-source("../code/RGES_vinblastine_external.R")
+#explain outliers (which do not follow the linear correlation)
+source("../code/RGES_vinblastine_external_prepare.R")
+source("../code/RGES_vinblastine_external_analysis.R")
 
 #sRGES vs IC50 
 source("../code/sRGES_IC50.R")
@@ -47,4 +51,4 @@ source("../code/sRGES_IC50_LIHC_after_validation.R")
 source("../code/sRGES_connectivity_score_comparison.R")
 
 #identify reversed genes
-source("../code/compute_reversed_genes.R")
+source("../code/compute_reversed_genes_v2=.R")
