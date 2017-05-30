@@ -1,10 +1,10 @@
 #an example of running RGES and summarizing RGES across multiple profiles.
-setwd("~/Documents/stanford/tumor_cell_line/RGES_manuscript/release/data")
+setwd("~/Documents/stanford/tumor_cell_line/RGES_manuscript/release/example_data")
 
 library("plyr")
 library("ggplot2")
 
-load("raw/lincs/lincs_signatures_cmpd_landmark.RData")
+load("example/lincs_signatures_cmpd_landmark.RData")
 
 #
 code_dir <- "../git_code/RGES/"
@@ -14,7 +14,7 @@ output_path <- paste("example/all_lincs_score.csv", sep="")
 sRGES_output_path <- paste("example/sRGES.csv", sep="")
 
 landmark <- 1
-lincs_sig_info <- read.csv("raw/lincs/lincs_sig_info.csv")
+lincs_sig_info <- read.csv("example/lincs_sig_info.csv")
 lincs_sig_info <- subset(lincs_sig_info, id %in% colnames(lincs_signatures))
 #remove duplicate instances
 lincs_sig_info <- lincs_sig_info[!duplicated(lincs_sig_info$id),]
