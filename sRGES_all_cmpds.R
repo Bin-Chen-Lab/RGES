@@ -42,6 +42,7 @@ diff <- tapply(lincs_drug_prediction_pairs$cmap_diff, paste(lincs_drug_predictio
 
 
 cell_lines <- read.csv(paste("raw/cell_lines/", cancer, "_cell_lines.csv", sep=""))
+ccle_lincs = read.csv("raw/cell_line_lincs_ccle.csv")
 
 cell_line_cancer <- read.csv(paste(cancer, "/", "cell_line_", cancer, "_tacle.csv", sep=""))
 cell_line_cancer <- merge(cell_line_cancer, ccle_lincs, by.x="Cell.line.primary.name", by.y="ccle_cell_line_name")
