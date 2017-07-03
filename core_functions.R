@@ -1,9 +1,9 @@
 ##############
 cmap_score_new <- function(sig_up, sig_down, drug_signature) {
   #the old function does not support the input list with either all up genes or all down genes, this new function attempts to addess this.
-  #we also modify a bit: whenever the sign of ks_up/ks_down, we substract the two scores such that the final scores would not enrich at 0.
+  #we also modify the original CMap approach: whenever the sign of ks_up/ks_down, we substract the two scores such that the final scores would not enrich at 0.
   
-  num_genes = nrow(drug_signature)
+  num_genes <- nrow(drug_signature)
   ks_up <- 0
   ks_down <- 0
   connectivity_score <- 0
@@ -83,15 +83,16 @@ get.gene.list <- function(con){
 }
 
 get.instance.sig <- function(id, con,  landmark=F){
+  #
   
-  sig_file = paste("~/Documents/stanford/lincs/data/lincs/", id, ".txt", sep="")
-  sig_value = NULL
+  sig_file <- paste("~/Documents/stanford/lincs/data/lincs/", id, ".txt", sep="")
+  sig_value <- NULL
   
   if (file.exists(sig_file)){
-    sig_value= scan(sig_file )
+    sig_value <- scan(sig_file )
     
     if (landmark){
-      sig_value = sig_value[1:978]
+      sig_value <- sig_value[1:978]
     }
     
   }else{
@@ -105,7 +106,7 @@ get.instance.sig <- function(id, con,  landmark=F){
       instance.sig <- data.frame(sig_id = id, probe_id = seq(1, length(value)), value = value)      
     }
     dbClearResult(rs)  
-    sig_value = instance.sig$value
+    sig_value <- instance.sig$value
   }
   return (sig_value)
 }
@@ -113,85 +114,85 @@ get.instance.sig <- function(id, con,  landmark=F){
 
 #find best alpha and beta
 find_alpha_beta <- function(){
-  alphas = seq(-1, 1, 0.1)
-  betas = seq(-1, 1, 0.1)
-  all_values = data.frame()
+  alphas <- seq(-1, 1, 0.1)
+  betas <- seq(-1, 1, 0.1)
+  all_values <- data.frame()
   for (alpha in alphas){
     for (beta in betas){
-      lincs_drug_prediction_subset = subset(lincs_drug_prediction, cell_id %in% c(cell_line_selected)) #HT29 MCF7
-      lincs_drug_prediction_subset$RGES = sapply(1:nrow(lincs_drug_prediction_subset), function(id){
+      lincs_drug_prediction_subset <- subset(lincs_drug_prediction, cell_id %in% c(cell_line_selected)) #HT29 MCF7
+      lincs_drug_prediction_subset$RGES <- sapply(1:nrow(lincs_drug_prediction_subset), function(id){
         getsRGES(lincs_drug_prediction_subset[id,"RGES"], lincs_drug_prediction_subset[id, "pert_dose"], lincs_drug_prediction_subset[id, "pert_time"], alpha, beta)
       })
-      lincs_drug_prediction_subset = aggregate(RGES ~ pert_iname, lincs_drug_prediction_subset, mean)
+      lincs_drug_prediction_subset <- aggregate(RGES ~ pert_iname, lincs_drug_prediction_subset, mean)
       
-      activity_RGES = merge(lincs_drug_prediction_subset, lincs_drug_activity_subset, by="pert_iname")
+      activity_RGES <- merge(lincs_drug_prediction_subset, lincs_drug_activity_subset, by="pert_iname")
       
-      activity_RGES_summarized = activity_RGES #aggregate(cbind(RGES, standard_value) ~ pert_iname, activity_RGES,  min)
+      activity_RGES_summarized <- activity_RGES #aggregate(cbind(RGES, standard_value) ~ pert_iname, activity_RGES,  min)
       
-      cor = cor(activity_RGES_summarized$RGES, log(activity_RGES_summarized$standard_value, 10), method="spearman")
-      all_values = rbind(all_values, data.frame(cor, alpha, beta))
+      cor <- cor(activity_RGES_summarized$RGES, log(activity_RGES_summarized$standard_value, 10), method="spearman")
+      all_values <- rbind(all_values, data.frame(cor, alpha, beta))
     }
   }
   return(all_values)
 }
 
-getsRGES1 = function(RGES, cor, pert_dose, pert_time){
-  sRGES = RGES
+getsRGES1 <- function(RGES, cor, pert_dose, pert_time){
+  sRGES <- RGES
   if (pert_time == 24){
-    sRGES = RGES + predict(lm_dose_24, data.frame(dose=round(log(pert_dose, 10), 1)))
+    sRGES <- RGES + predict(lm_dose_24, data.frame(dose=round(log(pert_dose, 10), 1)))
   }
   if (pert_time == 6){
-    sRGES = RGES + predict(lm_dose_6, data.frame(dose=round(log(pert_dose, 10), 1)))
+    sRGES <- RGES + predict(lm_dose_6, data.frame(dose=round(log(pert_dose, 10), 1)))
   }
   return (sRGES * cor )
 }
 
-getsRGES2 = function(RGES, cor, pert_dose, pert_time){
-  sRGES = RGES 
+getsRGES2 <- function(RGES, cor, pert_dose, pert_time){
+  sRGES <- RGES 
   
   #older version
   if (pert_time < 24){
-    sRGES = sRGES - 0.1
+    sRGES <- sRGES - 0.1
   }
   
   if (pert_dose < 10){
-    sRGES = sRGES - 0.2
+    sRGES <- sRGES - 0.2
   }
   return(sRGES * cor)
 }
 
-getsRGES3 = function(RGES, cor, pert_dose, pert_time, diff, max_cor){
+getsRGES3 <- function(RGES, cor, pert_dose, pert_time, diff, max_cor){
   
-  sRGES = RGES
-  pert_time = ifelse(pert_time < 24, "short", "long")
-  pert_dose = ifelse(pert_dose < 10, "low", "high")
+  sRGES <- RGES
+  pert_time <- ifelse(pert_time < 24, "short", "long")
+  pert_dose <- ifelse(pert_dose < 10, "low", "high")
   if (pert_time == "short" & pert_dose == "low"){
-    sRGES = sRGES + diff[4]
+    sRGES <- sRGES + diff[4]
   }
   if (pert_dose ==  "low" & pert_time == "long"){
-    sRGES = sRGES + diff[2]
+    sRGES <- sRGES + diff[2]
   }
   if (pert_dose ==  "high" & pert_time == "short"){
-    sRGES = sRGES + diff[1]
+    sRGES <- sRGES + diff[1]
   }
   return(sRGES ) #* cor/max_cor
 }
 
 ##################
 ####
-getsRGES = function(RGES, cor, pert_dose, pert_time, diff, max_cor){
+getsRGES <- function(RGES, cor, pert_dose, pert_time, diff, max_cor){
   
-  sRGES = RGES
-  pert_time = ifelse(pert_time < 24, "short", "long")
-  pert_dose = ifelse(pert_dose < 10, "low", "high")
+  sRGES <- RGES
+  pert_time <- ifelse(pert_time < 24, "short", "long")
+  pert_dose <- ifelse(pert_dose < 10, "low", "high")
   if (pert_time == "short" & pert_dose == "low"){
-    sRGES = sRGES + diff[4]
+    sRGES <- sRGES + diff[4]
   }
   if (pert_dose ==  "low" & pert_time == "long"){
-    sRGES = sRGES + diff[2]
+    sRGES <- sRGES + diff[2]
   }
   if (pert_dose ==  "high" & pert_time == "short"){
-    sRGES = sRGES + diff[1]
+    sRGES <- sRGES + diff[1]
   }
   return(sRGES * cor/max_cor) #
 }

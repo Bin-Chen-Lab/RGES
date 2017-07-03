@@ -1,4 +1,4 @@
-#compute correlation between RGES and drug IC50s
+#compute correlation between sRGES and drug IC50s
 
 library(cowplot)
 library("ROCR")
@@ -65,7 +65,6 @@ activity_RGES_summarized <- aggregate(cbind(RGES, spearman, pearson, standard_va
 cor_test <- cor.test(activity_RGES_summarized$RGES, log(activity_RGES_summarized$standard_value, 10), method="spearman")
 cor_test
 
-#igoring normal_cells may increase the correlation, tweaking dose and time does not. 
 #ignoring neither blood cell or tnbc cells may increase the correlation
 activity_RGES_summarized <- aggregate(cbind(RGES, spearman, pearson, standard_value) ~ pert_iname, activity_RGES,  mean)
 t.test(activity_RGES_summarized$RGES[activity_RGES_summarized$standard_value < 10000], activity_RGES_summarized$RGES[activity_RGES_summarized$standard_value > 10000])

@@ -67,7 +67,7 @@ for (cancer in cancers){
 }
 lincs_drug_predictions$cell_type <- paste(lincs_drug_predictions$cancer, "all cell lines", sep=", ")
 
-#from same lineage (random gene set has not cell lines)
+#from same lineage (random gene set has no cell line)
 lincs_drug_predictions_same_lineage <- data.frame()
 for (cancer in cancers[1:3]){
   output_path <- paste(cancer, "/all_lincs_score.csv", sep="")
@@ -113,7 +113,7 @@ cdata <- subset(cdata, !is.na(sd))
 tapply(cdata$sd, cdata$cancer, summary)
 
 
-#sd accross multiple cells from the same lineage
+#sd accross multiple cell lines from the same lineage
 pdf("fig/rges_sd_cells_same_lineage.pdf")
 ggplot(cdata, aes(x=sd)) + geom_density(aes(group=cancer, fill=cancer, colour=cancer), alpha=0.5) + theme_bw() + xlab("s.d. of RGES of individual compounds across cell lines") +
   theme(text = element_text(size=18), 
@@ -173,7 +173,6 @@ ggplot(cdata_plate_cell, aes(y=sd, x=factor(cancer), fill=factor(type))) + geom_
 dev.off()
 
 
-#one drug, multiple cells, doses or times, average sd
 #same drug same cell line and dose, different treatment duration
 drug_6_24s <- data.frame()
 comparison_time_results <- NULL

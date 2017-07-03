@@ -2,10 +2,10 @@ brca = read.csv( paste("BRCA", "/compare_sRGES_lincs_cloud_", "reduced", ".csv",
 lihc = read.csv( paste("LIHC", "/compare_sRGES_lincs_cloud_", "reduced", ".csv", sep=""))
 coad = read.csv( paste("COAD", "/compare_sRGES_lincs_cloud_", "reduced", ".csv", sep=""))
 
-all = cbind(brca[,2], lihc[,2], coad[,2])
+all <- cbind(brca[,2], lihc[,2], coad[,2])
 
-colnames(all) = c("BRCA", "LIHC", "COAD")
-rownames(all) = brca$X
+colnames(all) <- c("BRCA", "LIHC", "COAD")
+rownames(all) <- brca$X
 
 library(pheatmap)
 

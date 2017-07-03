@@ -1,14 +1,14 @@
-#compare with all other drug sensitivity database
+#compare with all other sensivity measurement matrices
 #
-cancer = "ER"
-site = "breast" #breast #large_intestine #liver 
-drug_pred = read.csv(paste( cancer, "/lincs_cancer_sRGES.csv", sep=""))
-drug_pred$RGES = drug_pred$sRGES
+cancer <- "ER"
+site <- "breast" #breast #large_intestine #liver 
+drug_pred <- read.csv(paste( cancer, "/lincs_cancer_sRGES.csv", sep=""))
+drug_pred$RGES <- drug_pred$sRGES
 
-gdsc_drug_activity = read.csv("raw/external_sensitivity/gdsc_cmpd_ic50.csv", stringsAsFactors=F, row.names = 1)
+gdsc_drug_activity <- read.csv("raw/external_sensitivity/gdsc_cmpd_ic50.csv", stringsAsFactors=F, row.names = 1)
 
-gdsc_cell_lines = read.csv("raw/external_sensitivity/gdsc_cell_line.csv")
-gdsc_cell_lines_site = gdsc_cell_lines$Sample.Name[gdsc_cell_lines$GDSC.Tissue.descriptor.2 == site]
+gdsc_cell_lines <- read.csv("raw/external_sensitivity/gdsc_cell_line.csv")
+gdsc_cell_lines_site <- gdsc_cell_lines$Sample.Name[gdsc_cell_lines$GDSC.Tissue.descriptor.2 == site]
 
 ###
 #evaluate shared cell lines individually
@@ -36,27 +36,27 @@ gdsc_cell_lines_site = gdsc_cell_lines$Sample.Name[gdsc_cell_lines$GDSC.Tissue.d
 #
 #TNBC = c("MDAMB231", "HS578T", "SKBR3", "BT20")
 
-drug_cell_matrix_subset =  gdsc_drug_activity[gdsc_drug_activity$cell_line %in% gdsc_cell_lines_site, -1]
+drug_cell_matrix_subset <-  gdsc_drug_activity[gdsc_drug_activity$cell_line %in% gdsc_cell_lines_site, -1]
  if (class(drug_cell_matrix_subset) == "numeric"){
-   drug_auc = drug_cell_matrix_subset
+   drug_auc <- drug_cell_matrix_subset
 }else{
-  drug_auc = apply(drug_cell_matrix_subset, 2, function(values){median(values, na.rm=T)})
+  drug_auc <- apply(drug_cell_matrix_subset, 2, function(values){median(values, na.rm=T)})
 }
 
-drug_auc = data.frame(drug = sapply(tolower(names(drug_auc)), function(x) paste(unlist(strsplit(x, "\\.")), collapse = " ")), auc = drug_auc)
-drug_auc = drug_auc[!is.na(drug_auc$auc),]
+drug_auc <- data.frame(drug = sapply(tolower(names(drug_auc)), function(x) paste(unlist(strsplit(x, "\\.")), collapse = " ")), auc = drug_auc)
+drug_auc <- drug_auc[!is.na(drug_auc$auc),]
 
-drug_pred$pert_iname = tolower(drug_pred$pert_iname)
+drug_pred$pert_iname <- tolower(drug_pred$pert_iname)
 
-activity_RGES = merge(drug_pred, drug_auc, by.x="pert_iname", by.y="drug")
-activity_RGES_summarized = aggregate(cbind(RGES, auc) ~ pert_iname, activity_RGES, median)
+activity_RGES <- merge(drug_pred, drug_auc, by.x="pert_iname", by.y="drug")
+activity_RGES_summarized <- aggregate(cbind(RGES, auc) ~ pert_iname, activity_RGES, median)
 plot(activity_RGES_summarized$RGES, activity_RGES_summarized$auc)
 
 cor.test(activity_RGES_summarized$RGES, activity_RGES_summarized$auc, method="spearman")
 
-cor_test = cor.test(activity_RGES_summarized$RGES, activity_RGES_summarized$auc, method="spearman")
+cor_test <- cor.test(activity_RGES_summarized$RGES, activity_RGES_summarized$auc, method="spearman")
 cor_test
-lm_cmap_ic50 = lm(RGES ~ auc, activity_RGES_summarized)
+lm_cmap_ic50 <- lm(RGES ~ auc, activity_RGES_summarized)
 summary(lm_cmap_ic50)
 summary(lm_cmap_ic50)$r.squared
 

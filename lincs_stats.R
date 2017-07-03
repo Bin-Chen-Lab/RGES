@@ -2,7 +2,7 @@
 
 library ("ggplot2")
 
-cancer = "BRCA"
+cancer <- "BRCA"
 
 #cmpd
 output_path <- paste(cancer, "/all_lincs_score.csv", sep="")

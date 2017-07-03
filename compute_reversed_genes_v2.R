@@ -1,8 +1,9 @@
 #find reversed genes by other anti-cancer drugs
 #statistical test between active and inactive drugs
 #leave one-drug-out cross valdiation
-#revised: replace DER. 
+#revised: replace DER based on reviewers' comments. 
 #use absolute position to replace DER
+#include Achilles shRNA data to validate targets. This part was not added in the manuscript.
 
 library(pheatmap)
 library("gplots")

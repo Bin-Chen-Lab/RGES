@@ -1,7 +1,10 @@
+#recommend to run each component at one time
+#some components only support individual cancers, so you may have to specify cancer in those components.
+
 setwd("~/Documents/stanford/tumor_cell_line/RGES_manuscript/release/data")
 
-code_dir = "../git_code/RGES/"
-cancers = c("BRCA", "LIHC", "COAD", "ER")
+code_dir <- "../git_code/RGES/"
+cancers <- c("BRCA", "LIHC", "COAD", "ER")
 
 #core functions
 source(paste(code_dir, "core_functions.R", sep=""))
@@ -38,7 +41,7 @@ source(paste(code_dir, "RGES_vinblastine_external_analysis.R", sep=""))
 #sRGES vs IC50 
 source(paste(code_dir, "sRGES_IC50.R", sep=""))
 
-#assessing performance using different methods
+#assess performance using different methods
 source(paste(code_dir, "performance.R", sep=""))
 
 #use sRGES to prioritize compounds
@@ -52,4 +55,4 @@ source(paste(code_dir, "sRGES_IC50_LIHC_after_validation.R", sep=""))
 source(paste(code_dir, "sRGES_connectivity_score_comparison.R", sep=""))
 
 #identify reversed genes
-source(paste(code_dir, "compute_reversed_genes_v2=.R", sep=""))
+source(paste(code_dir, "compute_reversed_genes_v2.R", sep=""))

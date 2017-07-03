@@ -1,19 +1,18 @@
-## ----global_settings, echo = FALSE, message = FALSE-----------------------------------------------
 
 library(ComplexHeatmap)
-cancer = "LIHC"
-mat = read.table(paste( "reversal_genes/", cancer, "_mutation.txt", sep=""), 
+cancer <- "LIHC"
+mat <- read.table(paste( "reversal_genes/", cancer, "_mutation.txt", sep=""), 
                  header = TRUE,stringsAsFactors=FALSE, sep = "\t")
-mat[is.na(mat)] = ""
-rownames(mat) = mat[, 1]
-mat = mat[, -1]
+mat[is.na(mat)] <- ""
+rownames(mat) <- mat[, 1]
+mat <- mat[, -1]
 #mat=  mat[, -ncol(mat)]
-mat = t(as.matrix(mat))
-rownames(mat) = sapply(rownames(mat), function(x) unlist(strsplit(x, "\\."))[1])
+mat <- t(as.matrix(mat))
+rownames(mat) <- sapply(rownames(mat), function(x) unlist(strsplit(x, "\\."))[1])
 mat[1:3, 1:3]
 
 ## -------------------------------------------------------------------------------------------------
-alter_fun = list(
+alter_fun <- list(
   background = function(x, y, w, h) {
     grid.rect(x, y, w-unit(0.5, "mm"), h-unit(0.5, "mm"), gp = gpar(fill = "#CCCCCC", col = NA))
   },
@@ -29,7 +28,7 @@ alter_fun = list(
 )
 
 ## -------------------------------------------------------------------------------------------------
-col = c("MUT" = "#008000", "AMP" = "red", "HOMDEL" = "blue")
+col <- c("MUT" = "#008000", "AMP" = "red", "HOMDEL" = "blue")
 
 #column_order = sample_order
 

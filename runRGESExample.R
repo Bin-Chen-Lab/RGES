@@ -1,20 +1,21 @@
 #an example of running RGES and summarizing RGES across multiple profiles.
-setwd("~/Documents/stanford/tumor_cell_line/RGES_manuscript/release/example_data")
+setwd("~/Documents/stanford/tumor_cell_line/RGES_manuscript/release/example_data/")
 
 library("plyr")
 library("ggplot2")
 
-load("example/lincs_signatures_cmpd_landmark.RData")
+#load LINCS drug gene expression profiles
+load("lincs_signatures_cmpd_landmark.RData")
 
 #
-code_dir <- "../git_code/RGES/"
+code_dir <- "git_code/RGES/"
 source(paste(code_dir, "core_functions.R",sep=""))
 
-output_path <- paste("example/all_lincs_score.csv", sep="")
-sRGES_output_path <- paste("example/sRGES.csv", sep="")
+output_path <- paste("all_lincs_score.csv", sep="")
+sRGES_output_path <- paste("sRGES.csv", sep="")
 
 landmark <- 1
-lincs_sig_info <- read.csv("example/lincs_sig_info.csv")
+lincs_sig_info <- read.csv("lincs_sig_info.csv")
 lincs_sig_info <- subset(lincs_sig_info, id %in% colnames(lincs_signatures))
 #remove duplicate instances
 lincs_sig_info <- lincs_sig_info[!duplicated(lincs_sig_info$id),]
@@ -23,7 +24,7 @@ sig.ids <- lincs_sig_info$id
 
 ##############
 #read disease signatures
-dz_signature <- read.csv("example/LIHC_sig_reduced.csv")
+dz_signature <- read.csv("LIHC_sig_reduced.csv")
 dz_genes_up <- subset(dz_signature,up_down=="up",select="GeneID")
 dz_genes_down <- subset(dz_signature,up_down=="down",select="GeneID")
 ###############
@@ -34,7 +35,7 @@ dz_genes_down <- subset(dz_signature,up_down=="down",select="GeneID")
 gene.list <- rownames(lincs_signatures)
 
 #compute RGES
-#only choose the top 100 genes
+#only choose the top 150 genes
 max_gene_size <- 150
 if (nrow(dz_genes_up) > max_gene_size){
   dz_genes_up <- data.frame(GeneID= dz_genes_up[1:max_gene_size,])
@@ -109,8 +110,9 @@ lincs_drug_prediction_pairs$dose_bin <- ifelse(lincs_drug_prediction_pairs$pert_
 diff <- tapply(lincs_drug_prediction_pairs$cmap_diff, paste(lincs_drug_prediction_pairs$dose_bin, lincs_drug_prediction_pairs$pert_time.y), mean)
 
 #ignore weighting cell lines
-lincs_cell_line_weight <- read.csv("example/lincs_cell_line_weight.csv")
+lincs_cell_line_weight <- read.csv("lincs_cell_line_weight.csv")
 pred <- merge(lincs_drug_prediction, lincs_cell_line_weight, by.x="cell_id", by.y="lincs_cell_id")
+pred$cor <- 1
 pred$RGES <- sapply(1:nrow(pred), function(id){getsRGES(pred$cmap_score[id], pred$cor[id], pred$pert_dose[id], pred$pert_time[id], diff, max(pred$cor))})
 
 cmpd_freq <- table(pred$pert_iname)
@@ -126,9 +128,9 @@ pred_merged <- pred_merged[order(pred_merged$sRGES), ]
 
 write.csv(pred_merged, sRGES_output_path)
 
-####
+##############
 #sRGES and drug efficacy
-drug_efficacy <- read.csv("example/drug_efficacy.csv")
+drug_efficacy <- read.csv("drug_efficacy.csv")
 
 RGES_efficacy <- merge(pred_merged, drug_efficacy, by = "pert_iname")
 
