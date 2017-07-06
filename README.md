@@ -18,6 +18,6 @@ To run the entire code, you need
 2) change workspace in workflow.R
 3) run workflow.R. It is a very time-consuming and complicated pipeline, so we recommend to run the specific component at one time.
 
-
+Contact Bin Chen (bin.chen@ucsf.edu) for any questions.
 
 
