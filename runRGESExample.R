@@ -1,5 +1,7 @@
 #an example of running RGES and summarizing RGES across multiple profiles.
+#make sure change the workspace and code directory
 setwd("~/Documents/stanford/tumor_cell_line/RGES_manuscript/release/example_data/")
+code_dir <- "../git_code/RGES/"
 
 library("plyr")
 library("ggplot2")
@@ -8,7 +10,6 @@ library("ggplot2")
 load("lincs_signatures_cmpd_landmark.RData")
 
 #
-code_dir <- "git_code/RGES/"
 source(paste(code_dir, "core_functions.R",sep=""))
 
 output_path <- paste("all_lincs_score.csv", sep="")
@@ -112,7 +113,6 @@ diff <- tapply(lincs_drug_prediction_pairs$cmap_diff, paste(lincs_drug_predictio
 #ignore weighting cell lines
 lincs_cell_line_weight <- read.csv("lincs_cell_line_weight.csv")
 pred <- merge(lincs_drug_prediction, lincs_cell_line_weight, by.x="cell_id", by.y="lincs_cell_id")
-pred$cor <- 1
 pred$RGES <- sapply(1:nrow(pred), function(id){getsRGES(pred$cmap_score[id], pred$cor[id], pred$pert_dose[id], pred$pert_time[id], diff, max(pred$cor))})
 
 cmpd_freq <- table(pred$pert_iname)
@@ -134,7 +134,7 @@ drug_efficacy <- read.csv("drug_efficacy.csv")
 
 RGES_efficacy <- merge(pred_merged, drug_efficacy, by = "pert_iname")
 
-cor_test <- cor.test(RGES_efficacy$sRGES, log(RGES_efficacy$standard_value, 10), method="spearman", exact=FALSE) #or kendall
+cor_test <- cor.test(RGES_efficacy$sRGES, log(RGES_efficacy$standard_value, 10), method="spearman", exact=FALSE) #
 lm_cmap_ic50 <- lm( log(standard_value, 10) ~ sRGES, RGES_efficacy)
 
 ggplot(RGES_efficacy, aes(sRGES, log(RGES_efficacy$standard_value, 10)  )) +  theme_bw()  + 
